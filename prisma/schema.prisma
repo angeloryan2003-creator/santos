@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Candidato {
+  id                 String   @id @default(cuid())
+  nome               String
+  telefone           String
+  vaga               String
+  canal              String
+  cidade             String?
+  experiencia        String
+  consistencia       String
+  empresasAnteriores String?
+  mobilidade         String
+  ferramentas        String
+  disponibilidade    String
+  pretensao          String
+  documentacao       String
+  referencias        String
+  antecedentes       String
+  triador            String?
+  observacoes        String?
+  pontuacao          Int
+  status             String
+  criadoEm           DateTime @default(now())
+  atualizadoEm       DateTime @updatedAt
+
+  @@index([status])
+  @@index([vaga])
+  @@index([pontuacao])
+}
+
+model MensagemWhatsapp {
+  id          String   @id @default(cuid())
+  telefone    String
+  corpo       String
+  recebidaEm  DateTime @default(now())
+  processada  Boolean  @default(false)
+  candidatoId String?
+
+  @@index([processada, recebidaEm])
+}
