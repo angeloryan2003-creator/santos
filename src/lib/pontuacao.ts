@@ -9,7 +9,7 @@ export type ChaveCriterio =
   | 'experiencia'
   | 'consistencia'
   | 'mobilidade'
-  | 'ferramentas'
+  | 'trabalhoAltura'
   | 'documentacao'
   | 'referencias'
   | 'disponibilidade'
@@ -61,13 +61,14 @@ export const CRITERIOS: Criterio[] = [
     ],
   },
   {
-    chave: 'ferramentas',
-    rotulo: 'Ferramentas próprias',
+    chave: 'trabalhoAltura',
+    rotulo: 'Trabalho em altura',
     peso: 10,
+    ajuda: 'Fachada e andaime são a maior parte do serviço, por isso pontua.',
     opcoes: [
-      { valor: 'Completas', pontos: 10 },
-      { valor: 'Parcial', pontos: 5 },
-      { valor: 'Nenhuma', pontos: 0 },
+      { valor: 'Sem restrição', pontos: 10 },
+      { valor: 'Com restrição', pontos: 4 },
+      { valor: 'Não trabalha em altura', pontos: 0 },
     ],
   },
   {
@@ -234,11 +235,12 @@ export const TREINAMENTO_NR = [
   'Não sabe informar',
 ] as const;
 
-export const TRABALHO_ALTURA = [
-  'Sem restrição',
-  'Com restrição',
-  'Não trabalha em altura',
-] as const;
+/** Ferramentas deixou de pontuar: a empresa fornece o material. Fica como registro. */
+export const FERRAMENTAS = ['Completas', 'Parcial', 'Nenhuma'] as const;
+
+/** Opções do critério de altura, para quem precisa da lista pronta. */
+export const TRABALHO_ALTURA =
+  CRITERIOS.find((c) => c.chave === 'trabalhoAltura')!.opcoes.map((o) => o.valor);
 
 export type Alerta = { nivel: 'grave' | 'atencao'; texto: string };
 

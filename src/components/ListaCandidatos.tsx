@@ -99,9 +99,9 @@ function Detalhe({ candidato }: { candidato: Candidato }) {
         <Campo rotulo="Cidade / bairro" valor={candidato.cidade ?? 'Não informado'} />
         <Campo rotulo="Triador" valor={candidato.triador ?? 'Não informado'} />
         <Campo rotulo="Antecedentes" valor={candidato.antecedentes} />
+        <Campo rotulo="Ferramentas próprias" valor={candidato.ferramentas} />
         <Campo rotulo="Uso de EPI" valor={candidato.usoEpi ?? 'Não perguntado'} />
         <Campo rotulo="Treinamento NR" valor={candidato.treinamentoNr ?? 'Não perguntado'} />
-        <Campo rotulo="Trabalho em altura" valor={candidato.trabalhoAltura ?? 'Não perguntado'} />
         <Campo
           rotulo="Empresas anteriores"
           valor={candidato.empresasAnteriores ?? 'Não informado'}

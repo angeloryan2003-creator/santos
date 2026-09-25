@@ -40,7 +40,7 @@ ignorando qualquer pontuação enviada pelo navegador.
 | Experiência na função | 25 | Nenhuma 0, Menos de 1 ano 8, 1 a 3 anos 16, Mais de 3 anos 25 |
 | Consistência no histórico | 15 | Primeiro emprego 8, Menos de 6 meses 5, 6 meses a 2 anos 10, Mais de 2 anos 15 |
 | Mobilidade até a obra | 15 | Perto até 30 min 15, Média até 1h 10, Longe ou depende de carona 3 |
-| Ferramentas próprias | 10 | Completas 10, Parcial 5, Nenhuma 0 |
+| Trabalho em altura | 10 | Sem restrição 10, Com restrição 4, Não trabalha em altura 0 |
 | Documentação | 15 | Completa 15, Parcial 7, Nenhuma 0 |
 | Referências verificáveis | 10 | Tem e dá pra verificar 10, Tem mas não verificada 5, Não tem 0 |
 | Disponibilidade pra começar | 5 | Imediata 5, 1 a 2 semanas 3, Mais de 1 mês 0 |
@@ -58,14 +58,24 @@ Regra fixa acima de tudo: com a consulta de antecedentes marcada como `Reprovada
 esse status depois. O campo de antecedentes é controle interno do escritório e nunca aparece em
 nada voltado ao candidato.
 
-## Segurança do trabalho
+Os dez pontos que hoje são de trabalho em altura eram de ferramentas próprias. A empresa fornece
+o material, então ter ferramenta não diz nada sobre o candidato, enquanto não subir em andaime
+corta boa parte do serviço.
 
-Três campos ficam fora da régua de propósito, porque a régua é a que a equipe já usa: uso de EPI,
-treinamento de NR e trabalho em altura. Eles não somam nem tiram ponto, mas levantam alerta na
-tela. Um candidato que diz não trabalhar em altura na vaga de pintor recebe aviso vermelho, porque
-fachada e andaime são a maior parte do serviço. NR-35 vencida ou inexistente vira aviso amarelo.
+## Registro sem pontuação
 
-Se um dia a equipe quiser que isso pontue, a mudança é em `src/lib/pontuacao.ts`, num lugar só.
+Três campos são registrados e não somam ponto: ferramentas próprias, uso de EPI e treinamento de
+NR. Os dois últimos levantam alerta na tela. NR-35 vencida ou inexistente vira aviso amarelo, e
+quem não trabalha em altura na vaga de pintor recebe aviso vermelho além de zerar o critério.
+
+A régua inteira vive em `src/lib/pontuacao.ts`. Mudou peso ou opção ali, rode:
+
+```bash
+npm run db:recalcular
+```
+
+Isso recalcula a pontuação de todo mundo com a régua nova e lista quem mudou. Status não é
+tocado, porque mudar status continua sendo decisão da equipe.
 
 ## Exportar, editar e excluir
 
@@ -115,6 +125,9 @@ O banco pode ser o mesmo do Neon ou um Postgres local. Para criar um banco novo 
 4. Rode `npx prisma migrate deploy` apontando para esse banco.
 
 ## Deploy na Vercel
+
+Se você nunca usou Neon nem Vercel, siga `docs/COMO-PUBLICAR.md`, que é o mesmo caminho escrito
+passo a passo, com o que clicar em cada tela. O resumo é este:
 
 1. Suba o repositório para o GitHub.
 2. Na Vercel, importe o repositório. O framework Next.js é detectado sozinho.

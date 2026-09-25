@@ -2,8 +2,8 @@ import {
   ANTECEDENTES,
   CANAIS,
   CRITERIOS,
+  FERRAMENTAS,
   STATUS,
-  TRABALHO_ALTURA,
   TREINAMENTO_NR,
   USO_EPI,
   VAGAS,
@@ -84,6 +84,12 @@ export function validarCandidato(corpo: Record<string, unknown>): ResultadoValid
     erros.push('Selecione a situação da consulta de antecedentes.');
   }
 
+  // Ferramentas saiu da régua, mas continua sendo registro obrigatório.
+  const ferramentas = texto(corpo.ferramentas);
+  if (!(FERRAMENTAS as readonly string[]).includes(ferramentas)) {
+    erros.push('Selecione a situação das ferramentas próprias.');
+  }
+
   const respostas = {} as Record<ChaveCriterio, string>;
   for (const criterio of CRITERIOS) {
     const valor = texto(corpo[criterio.chave]);
@@ -120,7 +126,7 @@ export function validarCandidato(corpo: Record<string, unknown>): ResultadoValid
       consistencia: respostas.consistencia,
       empresasAnteriores: opcional(corpo.empresasAnteriores),
       mobilidade: respostas.mobilidade,
-      ferramentas: respostas.ferramentas,
+      ferramentas,
       disponibilidade: respostas.disponibilidade,
       pretensao: respostas.pretensao,
       documentacao: respostas.documentacao,
@@ -128,7 +134,7 @@ export function validarCandidato(corpo: Record<string, unknown>): ResultadoValid
       antecedentes,
       usoEpi: daLista(corpo.usoEpi, USO_EPI),
       treinamentoNr: daLista(corpo.treinamentoNr, TREINAMENTO_NR),
-      trabalhoAltura: daLista(corpo.trabalhoAltura, TRABALHO_ALTURA),
+      trabalhoAltura: respostas.trabalhoAltura,
       triador: opcional(corpo.triador),
       observacoes: opcional(corpo.observacoes),
       pontuacao,

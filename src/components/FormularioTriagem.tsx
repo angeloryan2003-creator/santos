@@ -7,8 +7,8 @@ import {
   ANTECEDENTES,
   CANAIS,
   CRITERIOS,
+  FERRAMENTAS,
   STATUS,
-  TRABALHO_ALTURA,
   TREINAMENTO_NR,
   TRIADORES,
   USO_EPI,
@@ -281,13 +281,21 @@ export default function FormularioTriagem({ candidato }: { candidato?: Candidato
       </section>
 
       <section className="cartao p-5">
-        <h2 className="mb-1 text-base uppercase tracking-wide">Segurança do trabalho</h2>
+        <h2 className="mb-1 text-base uppercase tracking-wide">Registro sem pontuação</h2>
         <p className="mb-4 text-xs text-cinza">
-          Não entra na pontuação. Serve de alerta, porque fachada e andaime são trabalho em
-          altura e exigem NR-35.
+          Nada aqui soma ou tira ponto. Ferramenta própria não pontua porque quem fornece o
+          material é a empresa. EPI e NR ficam como alerta de segurança.
         </p>
 
         <div className="grid gap-4 md:grid-cols-3">
+          <Selecao
+            id="ferramentas"
+            rotulo="Ferramentas próprias"
+            valor={dados.ferramentas}
+            opcoes={[...FERRAMENTAS]}
+            aoMudar={(v) => alterar('ferramentas', v)}
+            obrigatorio
+          />
           <Selecao
             id="usoEpi"
             rotulo="Já usou EPI"
@@ -301,13 +309,6 @@ export default function FormularioTriagem({ candidato }: { candidato?: Candidato
             valor={dados.treinamentoNr}
             opcoes={[...TREINAMENTO_NR]}
             aoMudar={(v) => alterar('treinamentoNr', v)}
-          />
-          <Selecao
-            id="trabalhoAltura"
-            rotulo="Trabalho em altura"
-            valor={dados.trabalhoAltura}
-            opcoes={[...TRABALHO_ALTURA]}
-            aoMudar={(v) => alterar('trabalhoAltura', v)}
           />
         </div>
 
