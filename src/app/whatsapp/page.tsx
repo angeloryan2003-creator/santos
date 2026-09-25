@@ -1,6 +1,7 @@
 import Cabecalho from '@/components/Cabecalho';
 import ListaMensagens from '@/components/ListaMensagens';
 import { prisma } from '@/lib/prisma';
+import { plural } from '@/lib/formato';
 
 export const metadata = { title: 'WhatsApp | Angelo Pinturas' };
 export const dynamic = 'force-dynamic';
@@ -39,7 +40,7 @@ export default async function PaginaWhatsapp() {
           <p className="mt-2 text-sm font-semibold text-azul">
             {pendentes === 0
               ? 'Nenhuma mensagem pendente.'
-              : `${pendentes} mensagem${pendentes > 1 ? 's' : ''} pendente${pendentes > 1 ? 's' : ''}.`}
+              : `${plural(pendentes, 'mensagem pendente', 'mensagens pendentes')}.`}
           </p>
         </div>
 

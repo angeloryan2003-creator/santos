@@ -2,18 +2,24 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import type { Candidato } from '@prisma/client';
 import {
   ANTECEDENTES,
   CANAIS,
   CRITERIOS,
   STATUS,
+  TRABALHO_ALTURA,
+  TREINAMENTO_NR,
   TRIADORES,
+  USO_EPI,
   VAGAS,
+  alertasSeguranca,
   calcularPontuacao,
   pontosDoCriterio,
   recomendar,
   type ChaveCriterio,
 } from '@/lib/pontuacao';
+import { useOperador } from '@/lib/operador';
 
 type Formulario = Record<string, string>;
 
@@ -26,6 +32,9 @@ const VAZIO: Formulario = {
   triador: '',
   empresasAnteriores: '',
   antecedentes: 'Pendente',
+  usoEpi: '',
+  treinamentoNr: '',
+  trabalhoAltura: '',
   observacoes: '',
   status: '',
   experiencia: '',
@@ -46,23 +55,38 @@ const CORES_TOM: Record<string, string> = {
   vermelho: 'bg-red-600 text-white',
 };
 
-export default function FormularioTriagem() {
+function doCandidato(candidato: Candidato): Formulario {
+  const dados: Formulario = { ...VAZIO };
+  for (const chave of Object.keys(VAZIO)) {
+    const valor = (candidato as unknown as Record<string, unknown>)[chave];
+    dados[chave] = typeof valor === 'string' ? valor : '';
+  }
+  return dados;
+}
+
+export default function FormularioTriagem({ candidato }: { candidato?: Candidato }) {
   const router = useRouter();
   const parametros = useSearchParams();
+  const [operador] = useOperador();
 
+  const edicao = Boolean(candidato);
   const telefoneInicial = parametros.get('telefone') ?? '';
   const observacaoInicial = parametros.get('obs') ?? '';
   const mensagemId = parametros.get('mensagemId') ?? '';
 
-  const [dados, setDados] = useState<Formulario>({
-    ...VAZIO,
-    telefone: telefoneInicial,
-    observacoes: observacaoInicial,
-    canal: telefoneInicial ? 'WhatsApp direto' : '',
-  });
+  const [dados, setDados] = useState<Formulario>(
+    candidato
+      ? doCandidato(candidato)
+      : {
+          ...VAZIO,
+          telefone: telefoneInicial,
+          observacoes: observacaoInicial,
+          canal: telefoneInicial ? 'WhatsApp direto' : '',
+        },
+  );
   const [erros, setErros] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
-  const [statusTocado, setStatusTocado] = useState(false);
+  const [statusTocado, setStatusTocado] = useState(edicao);
 
   const pontuacao = useMemo(
     () => calcularPontuacao(dados as Partial<Record<ChaveCriterio, string>>),
@@ -72,6 +96,7 @@ export default function FormularioTriagem() {
     () => recomendar(pontuacao, dados.antecedentes),
     [pontuacao, dados.antecedentes],
   );
+  const alertas = useMemo(() => alertasSeguranca(dados), [dados]);
 
   // Enquanto a equipe não mexer no status, ele acompanha a recomendação.
   useEffect(() => {
@@ -83,6 +108,12 @@ export default function FormularioTriagem() {
     );
   }, [recomendacao.statusSugerido, statusTocado, dados.antecedentes]);
 
+  // Numa triagem nova, quem está usando o sistema já entra como triador.
+  useEffect(() => {
+    if (edicao || !operador) return;
+    setDados((atual) => (atual.triador ? atual : { ...atual, triador: operador }));
+  }, [operador, edicao]);
+
   function alterar(campo: string, valor: string) {
     setDados((atual) => ({ ...atual, [campo]: valor }));
   }
@@ -93,11 +124,18 @@ export default function FormularioTriagem() {
     setEnviando(true);
 
     try {
-      const resposta = await fetch('/api/candidatos', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...dados, mensagemId: mensagemId || undefined }),
-      });
+      const resposta = await fetch(
+        edicao ? `/api/candidatos/${candidato!.id}` : '/api/candidatos',
+        {
+          method: edicao ? 'PUT' : 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            ...dados,
+            autor: operador || undefined,
+            mensagemId: mensagemId || undefined,
+          }),
+        },
+      );
 
       const corpo = await resposta.json().catch(() => ({}));
 
@@ -243,6 +281,55 @@ export default function FormularioTriagem() {
       </section>
 
       <section className="cartao p-5">
+        <h2 className="mb-1 text-base uppercase tracking-wide">Segurança do trabalho</h2>
+        <p className="mb-4 text-xs text-cinza">
+          Não entra na pontuação. Serve de alerta, porque fachada e andaime são trabalho em
+          altura e exigem NR-35.
+        </p>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Selecao
+            id="usoEpi"
+            rotulo="Já usou EPI"
+            valor={dados.usoEpi}
+            opcoes={[...USO_EPI]}
+            aoMudar={(v) => alterar('usoEpi', v)}
+          />
+          <Selecao
+            id="treinamentoNr"
+            rotulo="Treinamento NR"
+            valor={dados.treinamentoNr}
+            opcoes={[...TREINAMENTO_NR]}
+            aoMudar={(v) => alterar('treinamentoNr', v)}
+          />
+          <Selecao
+            id="trabalhoAltura"
+            rotulo="Trabalho em altura"
+            valor={dados.trabalhoAltura}
+            opcoes={[...TRABALHO_ALTURA]}
+            aoMudar={(v) => alterar('trabalhoAltura', v)}
+          />
+        </div>
+
+        {alertas.length > 0 ? (
+          <ul className="mt-4 space-y-2">
+            {alertas.map((alerta) => (
+              <li
+                key={alerta.texto}
+                className={`rounded-md border-l-4 px-3 py-2 text-sm ${
+                  alerta.nivel === 'grave'
+                    ? 'border-red-600 bg-red-50 font-semibold text-red-800'
+                    : 'border-amarelo bg-amarelo/10 text-texto'
+                }`}
+              >
+                {alerta.texto}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
+      <section className="cartao p-5">
         <h2 className="mb-1 text-base uppercase tracking-wide">Controle interno</h2>
         <p className="mb-4 text-xs text-cinza">
           A consulta de antecedentes é registro interno do escritório. Nunca perguntar ou
@@ -329,7 +416,7 @@ export default function FormularioTriagem() {
 
         <div className="mt-5 flex flex-wrap gap-3">
           <button type="submit" className="botao-destaque" disabled={enviando}>
-            {enviando ? 'Salvando...' : 'Salvar triagem'}
+            {enviando ? 'Salvando...' : edicao ? 'Salvar alterações' : 'Salvar triagem'}
           </button>
           <button
             type="button"

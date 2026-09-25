@@ -20,6 +20,14 @@ Sem biblioteca de componentes.
 | `/`         | Pipeline: cartões de resumo, filtro por vaga e status, busca por nome ou telefone, lista ordenada por pontuação, detalhe expansível e status editável direto na lista |
 | `/nova`     | Formulário de triagem com pontuação ao vivo e o roteiro da ligação num painel fixo ao lado |
 | `/whatsapp` | Caixa de entrada das mensagens recebidas, não processadas primeiro, com botão para virar triagem |
+| `/candidato/[id]/editar` | Edição da triagem, com recálculo da pontuação ao salvar |
+
+## Quem está usando
+
+O login é uma senha só para as três pessoas do escritório, então não existe conta individual. No
+topo da tela tem um seletor com Angelo, Nayara e Sara. A escolha fica salva no navegador e serve
+para duas coisas: preencher o campo de quem triou por padrão e registrar o autor nas mudanças de
+status. Não é controle de acesso, é rastreabilidade mínima.
 
 ## Régua de pontuação
 
@@ -50,6 +58,33 @@ Regra fixa acima de tudo: com a consulta de antecedentes marcada como `Reprovada
 esse status depois. O campo de antecedentes é controle interno do escritório e nunca aparece em
 nada voltado ao candidato.
 
+## Segurança do trabalho
+
+Três campos ficam fora da régua de propósito, porque a régua é a que a equipe já usa: uso de EPI,
+treinamento de NR e trabalho em altura. Eles não somam nem tiram ponto, mas levantam alerta na
+tela. Um candidato que diz não trabalhar em altura na vaga de pintor recebe aviso vermelho, porque
+fachada e andaime são a maior parte do serviço. NR-35 vencida ou inexistente vira aviso amarelo.
+
+Se um dia a equipe quiser que isso pontue, a mudança é em `src/lib/pontuacao.ts`, num lugar só.
+
+## Exportar, editar e excluir
+
+- O botão Exportar CSV no pipeline baixa exatamente o que está filtrado na tela, com separador
+  ponto e vírgula, pronto para abrir no Excel em português.
+- Cada candidato tem Editar triagem no detalhe. A pontuação é recalculada ao salvar e a mudança de
+  status entra no histórico.
+- Excluir apaga o candidato de vez, com confirmação. Serve para atender pedido de remoção de dados
+  e para limpar duplicidade. A mensagem de WhatsApp ligada a ele volta para a caixa de entrada.
+
+## Dados de demonstração
+
+```bash
+npm run db:seed
+```
+
+Apaga tudo e recria doze candidatos e quatro mensagens de WhatsApp para a equipe ver o app cheio.
+Nunca rode isso no banco de produção depois que a equipe começar a usar de verdade.
+
 ## Variáveis de ambiente
 
 | Variável | Onde configurar | Para que serve |
@@ -68,6 +103,7 @@ Copie `.env.example` para `.env` e preencha. O arquivo `.env` não vai para o Gi
 npm install
 cp .env.example .env    # preencha DATABASE_URL, DIRECT_URL e APP_PASSWORD
 npx prisma migrate dev  # cria as tabelas
+npm run db:seed         # opcional, popula com dados de demonstração
 npm run dev             # http://localhost:3000
 ```
 
@@ -144,8 +180,10 @@ nome, procure pela seção WhatsApp e por Webhook dentro dela.
 - O webhook ignora reenvio da Meta quando chega o mesmo telefone com o mesmo texto em menos de
   dois minutos.
 - O pipeline carrega no máximo 300 candidatos por consulta. Para volume maior, use os filtros.
+- Não existe expurgo automático de candidato antigo. Se a empresa definir um prazo de guarda, hoje
+  a limpeza é manual pelo botão Excluir.
 
 ## Fora de escopo nesta versão
 
-Login individual por pessoa, bot que responde ou pontua no WhatsApp, integração com Gupy, Catho
-ou Indeed, e edição ou exclusão de candidato depois de criado. Só o status é editável.
+Login individual por pessoa, bot que responde ou pontua no WhatsApp e integração com Gupy, Catho
+ou Indeed.

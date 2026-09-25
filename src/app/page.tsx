@@ -3,41 +3,21 @@ import Cabecalho from '@/components/Cabecalho';
 import ListaCandidatos from '@/components/ListaCandidatos';
 import FiltrosPipeline from '@/components/FiltrosPipeline';
 import { prisma } from '@/lib/prisma';
-import { STATUS, VAGAS } from '@/lib/pontuacao';
-import { apenasDigitos } from '@/lib/formato';
-import type { Prisma } from '@prisma/client';
+import { lerFiltros, montarWhere } from '@/lib/filtros';
+import { plural } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 
 const EM_PROCESSO = ['Novo', 'Entrevista marcada', 'Teste prático'];
-
-function primeiro(valor: string | string[] | undefined): string {
-  if (Array.isArray(valor)) return valor[0] ?? '';
-  return valor ?? '';
-}
 
 export default async function PaginaPipeline({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const parametros = await searchParams;
-  const vagaFiltro = primeiro(parametros.vaga);
-  const statusFiltro = primeiro(parametros.status);
-  const busca = primeiro(parametros.q).trim();
-
-  const where: Prisma.CandidatoWhereInput = {};
-  if ((VAGAS as readonly string[]).includes(vagaFiltro)) where.vaga = vagaFiltro;
-  if ((STATUS as readonly string[]).includes(statusFiltro)) where.status = statusFiltro;
-
-  if (busca) {
-    const digitos = apenasDigitos(busca);
-    where.OR = [
-      { nome: { contains: busca, mode: 'insensitive' } },
-      ...(digitos.length >= 3 ? [{ telefone: { contains: digitos } }] : []),
-      { telefone: { contains: busca } },
-    ];
-  }
+  const filtros = lerFiltros(await searchParams);
+  const { vaga: vagaFiltro, status: statusFiltro, busca } = filtros;
+  const where = montarWhere(filtros);
 
   const [candidatos, porStatus, total, mensagensNovas] = await Promise.all([
     prisma.candidato.findMany({
@@ -82,9 +62,19 @@ export default async function PaginaPipeline({
           <div className="flex gap-2">
             {mensagensNovas > 0 ? (
               <Link href="/whatsapp" className="botao-secundario">
-                {mensagensNovas} mensagem{mensagensNovas > 1 ? 's' : ''} no WhatsApp
+                {plural(mensagensNovas, 'mensagem', 'mensagens')} no WhatsApp
               </Link>
             ) : null}
+            <a
+              href={`/api/candidatos/exportar?${new URLSearchParams({
+                vaga: vagaFiltro,
+                status: statusFiltro,
+                q: busca,
+              }).toString()}`}
+              className="botao-secundario"
+            >
+              Exportar CSV
+            </a>
             <Link href="/nova" className="botao-destaque">
               Nova triagem
             </Link>
@@ -111,7 +101,7 @@ export default async function PaginaPipeline({
         <p className="mb-3 mt-6 text-sm text-cinza">
           {candidatos.length === 0
             ? 'Nenhum candidato encontrado com esses filtros.'
-            : `${candidatos.length} candidato${candidatos.length > 1 ? 's' : ''} na lista.`}
+            : `${plural(candidatos.length, 'candidato', 'candidatos')} na lista.`}
         </p>
 
         <ListaCandidatos candidatos={candidatos} />

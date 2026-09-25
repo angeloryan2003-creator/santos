@@ -218,3 +218,72 @@ export function recomendar(pontuacao: number, antecedentes: string): Recomendaca
   }
   return faixaPorPontuacao(pontuacao);
 }
+
+/**
+ * Segurança do trabalho. Registro obrigatório, mas fora da régua de pontuação:
+ * a régua é a mesma que a equipe já usa e não foi alterada. Aqui o app só
+ * guarda a resposta e levanta alerta na tela, porque pintura de fachada é
+ * trabalho em altura e isso não pode passar batido numa triagem.
+ */
+export const USO_EPI = ['Sim, usa sempre', 'Já usou algumas vezes', 'Nunca usou'] as const;
+
+export const TREINAMENTO_NR = [
+  'NR-35 em dia',
+  'Já fez, está vencido',
+  'Nunca fez',
+  'Não sabe informar',
+] as const;
+
+export const TRABALHO_ALTURA = [
+  'Sem restrição',
+  'Com restrição',
+  'Não trabalha em altura',
+] as const;
+
+export type Alerta = { nivel: 'grave' | 'atencao'; texto: string };
+
+export function alertasSeguranca(dados: {
+  vaga?: string | null;
+  usoEpi?: string | null;
+  treinamentoNr?: string | null;
+  trabalhoAltura?: string | null;
+}): Alerta[] {
+  const alertas: Alerta[] = [];
+
+  if (dados.trabalhoAltura === 'Não trabalha em altura') {
+    alertas.push({
+      nivel: dados.vaga === 'Pintor' ? 'grave' : 'atencao',
+      texto:
+        dados.vaga === 'Pintor'
+          ? 'Não trabalha em altura. Não pode ser escalado em fachada nem em andaime, o que corta boa parte do serviço de pintor.'
+          : 'Não trabalha em altura. Limita a escala em obra com andaime.',
+    });
+  }
+
+  if (dados.trabalhoAltura === 'Com restrição') {
+    alertas.push({
+      nivel: 'atencao',
+      texto: 'Trabalha em altura com restrição. Confirme qual é a restrição antes de escalar.',
+    });
+  }
+
+  if (dados.treinamentoNr === 'Nunca fez' || dados.treinamentoNr === 'Não sabe informar') {
+    alertas.push({
+      nivel: 'atencao',
+      texto: 'Sem NR-35 confirmada. Precisa de treinamento antes de qualquer serviço em altura.',
+    });
+  }
+
+  if (dados.treinamentoNr === 'Já fez, está vencido') {
+    alertas.push({ nivel: 'atencao', texto: 'NR-35 vencida. Precisa de reciclagem.' });
+  }
+
+  if (dados.usoEpi === 'Nunca usou') {
+    alertas.push({
+      nivel: 'atencao',
+      texto: 'Nunca usou EPI. Prever integração de segurança antes de entrar em obra.',
+    });
+  }
+
+  return alertas;
+}

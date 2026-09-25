@@ -1,11 +1,19 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import type { Candidato } from '@prisma/client';
+import { useEffect, useState } from 'react';
+import type { AlteracaoStatus, Candidato } from '@prisma/client';
 import { BadgePontuacao, BadgeStatus, AvisoAntecedentes } from './Badges';
-import { CRITERIOS, STATUS, faixaPorPontuacao, pontosDoCriterio } from '@/lib/pontuacao';
-import { formatarDataHora, formatarTelefone } from '@/lib/formato';
+import {
+  CRITERIOS,
+  STATUS,
+  alertasSeguranca,
+  faixaPorPontuacao,
+  pontosDoCriterio,
+} from '@/lib/pontuacao';
+import { formatarData, formatarDataHora, formatarTelefone } from '@/lib/formato';
+import { useOperador } from '@/lib/operador';
 
 export default function ListaCandidatos({ candidatos }: { candidatos: Candidato[] }) {
   const [aberto, setAberto] = useState<string | null>(null);
@@ -19,28 +27,34 @@ export default function ListaCandidatos({ candidatos }: { candidatos: Candidato[
           <button
             type="button"
             onClick={() => setAberto(aberto === candidato.id ? null : candidato.id)}
-            className="flex w-full items-center gap-4 p-4 text-left transition hover:bg-cinza/5"
+            className="flex w-full items-start gap-3 p-4 text-left transition hover:bg-cinza/5 sm:items-center sm:gap-4"
             aria-expanded={aberto === candidato.id}
           >
             <BadgePontuacao pontuacao={candidato.pontuacao} />
 
             <div className="min-w-0 flex-1">
-              <p className="truncate font-titulo text-base font-semibold text-azul">
+              <p className="font-titulo text-base font-semibold leading-tight text-azul">
                 {candidato.nome}
               </p>
-              <p className="truncate text-sm text-cinza">
+              <p className="mt-0.5 text-sm leading-tight text-cinza">
                 {candidato.vaga} · {formatarTelefone(candidato.telefone)}
                 {candidato.cidade ? ` · ${candidato.cidade}` : ''}
               </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 sm:hidden">
+                <BadgeStatus status={candidato.status} />
+                <span className="text-xs text-cinza">{formatarData(candidato.criadoEm)}</span>
+              </div>
             </div>
 
             <div className="hidden text-right text-xs text-cinza sm:block">
               {formatarDataHora(candidato.criadoEm)}
             </div>
 
-            <BadgeStatus status={candidato.status} />
+            <div className="hidden sm:block">
+              <BadgeStatus status={candidato.status} />
+            </div>
 
-            <span className="text-cinza" aria-hidden>
+            <span className="mt-1 text-cinza sm:mt-0" aria-hidden>
               {aberto === candidato.id ? '▲' : '▼'}
             </span>
           </button>
@@ -55,10 +69,28 @@ export default function ListaCandidatos({ candidatos }: { candidatos: Candidato[
 function Detalhe({ candidato }: { candidato: Candidato }) {
   const faixa = faixaPorPontuacao(candidato.pontuacao);
   const bloqueado = candidato.antecedentes === 'Reprovada';
+  const alertas = alertasSeguranca(candidato);
 
   return (
     <div className="space-y-5 border-t border-cinza/25 bg-fundo/60 p-4">
       {bloqueado ? <AvisoAntecedentes antecedentes={candidato.antecedentes} /> : null}
+
+      {alertas.length > 0 ? (
+        <ul className="space-y-2">
+          {alertas.map((alerta) => (
+            <li
+              key={alerta.texto}
+              className={`rounded-md border-l-4 px-3 py-2 text-sm ${
+                alerta.nivel === 'grave'
+                  ? 'border-red-600 bg-red-50 font-semibold text-red-800'
+                  : 'border-amarelo bg-amarelo/15 text-texto'
+              }`}
+            >
+              {alerta.texto}
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Campo rotulo="Telefone" valor={formatarTelefone(candidato.telefone)} />
@@ -67,6 +99,9 @@ function Detalhe({ candidato }: { candidato: Candidato }) {
         <Campo rotulo="Cidade / bairro" valor={candidato.cidade ?? 'Não informado'} />
         <Campo rotulo="Triador" valor={candidato.triador ?? 'Não informado'} />
         <Campo rotulo="Antecedentes" valor={candidato.antecedentes} />
+        <Campo rotulo="Uso de EPI" valor={candidato.usoEpi ?? 'Não perguntado'} />
+        <Campo rotulo="Treinamento NR" valor={candidato.treinamentoNr ?? 'Não perguntado'} />
+        <Campo rotulo="Trabalho em altura" valor={candidato.trabalhoAltura ?? 'Não perguntado'} />
         <Campo
           rotulo="Empresas anteriores"
           valor={candidato.empresasAnteriores ?? 'Não informado'}
@@ -118,9 +153,12 @@ function Detalhe({ candidato }: { candidato: Candidato }) {
         </div>
       ) : null}
 
+      <Historico id={candidato.id} />
+
       <EditorStatus
         id={candidato.id}
         statusAtual={candidato.status}
+        nome={candidato.nome}
         bloqueado={bloqueado}
       />
     </div>
@@ -136,16 +174,59 @@ function Campo({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
+function Historico({ id }: { id: string }) {
+  const [registros, setRegistros] = useState<AlteracaoStatus[] | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+    fetch(`/api/candidatos/${id}`)
+      .then((resposta) => (resposta.ok ? resposta.json() : null))
+      .then((dados) => {
+        if (ativo && dados) setRegistros(dados.historico ?? []);
+      })
+      .catch(() => {
+        if (ativo) setRegistros([]);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [id]);
+
+  if (!registros || registros.length === 0) return null;
+
+  return (
+    <div>
+      <h3 className="mb-2 text-sm uppercase tracking-wide">Histórico de status</h3>
+      <ul className="space-y-1 text-sm text-texto">
+        {registros.map((registro) => (
+          <li key={registro.id} className="rounded-md border border-cinza/25 bg-white px-3 py-2">
+            {registro.de} para <span className="font-semibold">{registro.para}</span>
+            <span className="text-cinza">
+              {' '}
+              · {formatarDataHora(registro.criadoEm)}
+              {registro.autor ? ` · ${registro.autor}` : ' · autor não identificado'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function EditorStatus({
   id,
   statusAtual,
+  nome,
   bloqueado,
 }: {
   id: string;
   statusAtual: string;
+  nome: string;
   bloqueado: boolean;
 }) {
   const router = useRouter();
+  const [operador] = useOperador();
+  const [excluindo, setExcluindo] = useState(false);
   const [status, setStatus] = useState(statusAtual);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState('');
@@ -162,7 +243,7 @@ function EditorStatus({
       const resposta = await fetch(`/api/candidatos/${id}`, {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ status: novo }),
+        body: JSON.stringify({ status: novo, autor: operador || undefined }),
       });
 
       if (!resposta.ok) {
@@ -202,6 +283,39 @@ function EditorStatus({
           ))}
         </select>
       </div>
+
+      <Link href={`/candidato/${id}/editar`} className="botao-secundario mb-0.5">
+        Editar triagem
+      </Link>
+
+      <button
+        type="button"
+        className="mb-0.5 inline-flex items-center justify-center rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+        disabled={excluindo}
+        onClick={async () => {
+          const confirmado = window.confirm(
+            `Excluir definitivamente a triagem de ${nome}? Isso apaga os dados do candidato e não tem volta.`,
+          );
+          if (!confirmado) return;
+          setExcluindo(true);
+          setErro('');
+          try {
+            const resposta = await fetch(`/api/candidatos/${id}`, { method: 'DELETE' });
+            if (!resposta.ok) {
+              const dados = await resposta.json().catch(() => ({}));
+              setErro(dados.erro ?? 'Não foi possível excluir.');
+              return;
+            }
+            router.refresh();
+          } catch {
+            setErro('Falha de conexão ao excluir.');
+          } finally {
+            setExcluindo(false);
+          }
+        }}
+      >
+        {excluindo ? 'Excluindo...' : 'Excluir'}
+      </button>
 
       {bloqueado ? (
         <p className="pb-2 text-sm text-red-700">

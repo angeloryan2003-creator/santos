@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import BotaoSair from './BotaoSair';
+import SeletorOperador from './SeletorOperador';
 
 const NAVEGACAO = [
   { href: '/', rotulo: 'Pipeline' },
@@ -10,8 +11,9 @@ const NAVEGACAO = [
 export default function Cabecalho({ atual }: { atual: string }) {
   return (
     <header className="border-b-4 border-amarelo bg-azul">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-3 px-4 py-4">
-        <Link href="/" className="flex items-baseline gap-2">
+      {/* No celular quebra em duas linhas: marca e ações em cima, navegação embaixo. */}
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 md:py-4">
+        <Link href="/" className="order-1 mr-auto flex items-baseline gap-2">
           <span className="font-titulo text-lg font-bold uppercase tracking-wide text-white">
             Angelo Pinturas
           </span>
@@ -20,7 +22,7 @@ export default function Cabecalho({ atual }: { atual: string }) {
           </span>
         </Link>
 
-        <nav className="flex flex-1 flex-wrap items-center gap-1">
+        <nav className="order-3 flex w-full items-center gap-1 md:order-2 md:w-auto md:flex-1 md:px-4">
           {NAVEGACAO.map((item) => {
             const ativo = item.href === '/' ? atual === '/' : atual.startsWith(item.href);
             return (
@@ -37,7 +39,10 @@ export default function Cabecalho({ atual }: { atual: string }) {
           })}
         </nav>
 
-        <BotaoSair />
+        <div className="order-2 flex items-center gap-2 md:order-3 md:gap-3">
+          <SeletorOperador />
+          <BotaoSair />
+        </div>
       </div>
     </header>
   );

@@ -37,3 +37,8 @@ export function formatarData(data: Date | string): string {
     timeZone: 'America/Sao_Paulo',
   }).format(d);
 }
+
+/** Plural simples para as contagens da interface. */
+export function plural(quantidade: number, singular: string, plural: string): string {
+  return `${quantidade} ${quantidade === 1 ? singular : plural}`;
+}

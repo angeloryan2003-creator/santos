@@ -3,6 +3,9 @@ import {
   CANAIS,
   CRITERIOS,
   STATUS,
+  TRABALHO_ALTURA,
+  TREINAMENTO_NR,
+  USO_EPI,
   VAGAS,
   calcularPontuacao,
   recomendar,
@@ -26,6 +29,9 @@ export type DadosCandidato = {
   documentacao: string;
   referencias: string;
   antecedentes: string;
+  usoEpi: string | null;
+  treinamentoNr: string | null;
+  trabalhoAltura: string | null;
   triador: string | null;
   observacoes: string | null;
   pontuacao: number;
@@ -43,6 +49,12 @@ function texto(valor: unknown): string {
 function opcional(valor: unknown): string | null {
   const t = texto(valor);
   return t.length > 0 ? t : null;
+}
+
+/** Campo de lista fechada que pode ficar em branco. */
+function daLista(valor: unknown, lista: readonly string[]): string | null {
+  const t = texto(valor);
+  return lista.includes(t) ? t : null;
 }
 
 /**
@@ -114,6 +126,9 @@ export function validarCandidato(corpo: Record<string, unknown>): ResultadoValid
       documentacao: respostas.documentacao,
       referencias: respostas.referencias,
       antecedentes,
+      usoEpi: daLista(corpo.usoEpi, USO_EPI),
+      treinamentoNr: daLista(corpo.treinamentoNr, TREINAMENTO_NR),
+      trabalhoAltura: daLista(corpo.trabalhoAltura, TRABALHO_ALTURA),
       triador: opcional(corpo.triador),
       observacoes: opcional(corpo.observacoes),
       pontuacao,

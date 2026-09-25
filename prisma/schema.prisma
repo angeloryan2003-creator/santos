@@ -25,12 +25,17 @@ model Candidato {
   documentacao       String
   referencias        String
   antecedentes       String
+  usoEpi             String?
+  treinamentoNr      String?
+  trabalhoAltura     String?
   triador            String?
   observacoes        String?
   pontuacao          Int
   status             String
   criadoEm           DateTime @default(now())
   atualizadoEm       DateTime @updatedAt
+
+  historico AlteracaoStatus[]
 
   @@index([status])
   @@index([vaga])
@@ -46,4 +51,17 @@ model MensagemWhatsapp {
   candidatoId String?
 
   @@index([processada, recebidaEm])
+}
+
+model AlteracaoStatus {
+  id          String   @id @default(cuid())
+  candidatoId String
+  de          String
+  para        String
+  autor       String?
+  criadoEm    DateTime @default(now())
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  @@index([candidatoId, criadoEm])
 }
