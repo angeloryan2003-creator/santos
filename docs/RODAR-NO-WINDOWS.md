@@ -7,6 +7,26 @@ O que você vai ter no fim: o app abrindo em `http://localhost:3000`, com seus d
 guardados no Neon. Só você acessa, e só enquanto o terminal estiver aberto. Para a Nayara e a
 Sara usarem, aí sim é publicar na Vercel, que está em `COMO-PUBLICAR.md`.
 
+## Caminho curto
+
+Depois de instalar o Node e baixar o código (passos 1 e 2 abaixo), dá para fazer tudo com um
+comando só. No PowerShell, dentro da pasta do projeto:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\configurar.ps1
+```
+
+O script confere o Node, pergunta as conexões do Neon e a senha que você quer, cria o arquivo de
+configuração, instala tudo, cria as tabelas, pergunta se quer os dados de exemplo e liga o app,
+abrindo o navegador no fim. Nos dias seguintes, para ligar de novo:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\iniciar.ps1
+```
+
+Você ainda precisa da conta no Neon, que é o passo 3, porque é ali que ficam os dados e a conta é
+sua. O resto desta página é o mesmo caminho na mão, caso prefira ver cada etapa ou o script falhe.
+
 ## 1. Instalar o Node
 
 1. Entre em nodejs.org e baixe a versão LTS para Windows, que é o botão grande da esquerda.
