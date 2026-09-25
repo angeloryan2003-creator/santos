@@ -109,6 +109,9 @@ Copie `.env.example` para `.env` e preencha. O arquivo `.env` não vai para o Gi
 
 ## Rodando local
 
+No Windows e sem experiência com terminal, siga `docs/RODAR-NO-WINDOWS.md`, que é este mesmo
+caminho escrito passo a passo. O resumo é este:
+
 ```bash
 npm install
 cp .env.example .env    # preencha DATABASE_URL, DIRECT_URL e APP_PASSWORD
